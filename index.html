@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Flappy Bird</title>
+        <link rel="stylesheet" href="flappybird.css">
+        <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+        <script src="https://unpkg.com/thirdweb@2.11.0/dist/thirdweb.js" async onload="initThirdweb()"></script>
+        <script src="flappybird.js" defer></script>
+    </head>
+    <body>
+        <div id="game-container">
+            <canvas id="board"></canvas>
+            <div id="wallet-info">
+                <div>Wallet: <span id="wallet-address">Not connected</span></div>
+                <div>Pending Rewards: <span id="pending-rewards">0</span> TetraTokens</div>
+                <button id="connect-wallet">Connect Wallet</button>
+                <button id="claim-rewards">Claim Rewards</button>
+            </div>
+        </div>
+    </body>
+</html>
