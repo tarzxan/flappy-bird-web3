@@ -6,13 +6,13 @@ function initThirdweb() {
         alert("Failed to load Thirdweb SDK. Please refresh the page.");
         return;
     }
-
-    // Thirdweb Setup
+    console.log("Initializing Thirdweb SDK...");
     sdk = new ThirdwebSDK("base", {
         clientId: "7952e5b4a6378916d38711001f30c8c8" // Replace with your Thirdweb client ID
     });
+    console.log("SDK initialized, connecting to contract...");
     contract = sdk.getContract("0xcDCe80fEF5647D474efB39E9E43D209bd19c776f");
-
+    console.log("Contract connected:", contract);
     setupWalletInteractions();
 }
 
@@ -23,11 +23,14 @@ let connectedAccount = null;
 function setupWalletInteractions() {
     async function connectWallet() {
         try {
+            console.log("Attempting to connect Coinbase Wallet...");
             const wallet = await sdk.wallet.connect("coinbase");
+            console.log("Wallet connected:", wallet);
             connectedAccount = wallet;
             walletAddress = `Connected: ${connectedAccount.slice(0, 6)}...`;
             document.getElementById("wallet-address").innerText = walletAddress;
 
+            console.log("Fetching pending rewards for:", connectedAccount);
             const rewards = await contract.call("pendingRewards", [connectedAccount]);
             pendingRewards = ethers.utils.formatEther(rewards);
             document.getElementById("pending-rewards").innerText = pendingRewards;
@@ -52,7 +55,9 @@ function setupWalletInteractions() {
                 return;
             }
             try {
+                console.log("Claiming rewards...");
                 await contract.call("claimRewards");
+                console.log("Rewards claimed!");
                 alert("Rewards claimed!");
                 pendingRewards = 0;
                 document.getElementById("pending-rewards").innerText = pendingRewards;
@@ -66,14 +71,14 @@ function setupWalletInteractions() {
     }
 }
 
-// Board
+// Rest of your game logic (unchanged)
 let board;
 let boardWidth = 360;
 let boardHeight = 640;
 let context;
 
 // Bird
-let birdWidth = 34; //width/height ratio = 408/228 = 17/12
+let birdWidth = 34;
 let birdHeight = 24;
 let birdX = boardWidth/8;
 let birdY = boardHeight/2;
@@ -88,7 +93,7 @@ let bird = {
 
 // Pipes
 let pipeArray = [];
-let pipeWidth = 64; //width/height ratio = 384/3072 = 1/8
+let pipeWidth = 64;
 let pipeHeight = 512;
 let pipeX = boardWidth;
 let pipeY = 0;
@@ -97,8 +102,8 @@ let topPipeImg;
 let bottomPipeImg;
 
 // Physics
-let velocityX = -2; //pipes moving left speed
-let velocityY = 0; //bird jump speed
+let velocityX = -2;
+let velocityY = 0;
 let gravity = 0.4;
 
 let gameOver = false;
@@ -154,6 +159,7 @@ function update() {
             pipe.passed = true;
             if (connectedAccount && pipe.img === topPipeImg && contract) {
                 contract.call("passPipe", [connectedAccount]).then(() => {
+                    console.log("passPipe called successfully");
                     contract.call("pendingRewards", [connectedAccount]).then(rewards => {
                         pendingRewards = ethers.utils.formatEther(rewards);
                         document.getElementById("pending-rewards").innerText = pendingRewards;
