@@ -1,45 +1,311 @@
-let sdk, contract;
+let web3;
+let accounts;
+let contract;
 
-function initThirdweb() {
-    if (typeof Thirdweb === "undefined") {
-        console.error("Thirdweb SDK not loaded");
-        alert("Failed to load Thirdweb SDK. Please refresh the page.");
-        return;
-    }
-    console.log("Initializing Thirdweb SDK...");
-    sdk = new ThirdwebSDK("base", {
-        clientId: "7952e5b4a6378916d38711001f30c8c8" // Replace with your Thirdweb client ID
-    });
-    console.log("SDK initialized, connecting to contract...");
-    contract = sdk.getContract("0xcDCe80fEF5647D474efB39E9E43D209bd19c776f");
-    console.log("Contract connected:", contract);
-    setupWalletInteractions();
-}
+// Your contract ABI (you’ll need to provide this)
+const contractABI = [
+    [
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "rewardType",
+				"type": "uint256"
+			}
+		],
+		"name": "addCustomReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "claimRewards",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "depositTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_tetraTokenAddress",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "previousOwner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			}
+		],
+		"name": "passPipe",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "reward",
+				"type": "uint256"
+			}
+		],
+		"name": "PipePassed",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "RewardClaimed",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPiggyBankBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "pendingRewards",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "playerScores",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "REWARD_PER_PIPE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "tetraToken",
+		"outputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
+];
+
+// Your contract address on Base mainnet
+const contractAddress = "0xcDCe80fEF5647D474efB39E9E43D209bd19c776f";
 
 let walletAddress = "Not connected";
 let pendingRewards = 0;
 let connectedAccount = null;
 
-function setupWalletInteractions() {
-    async function connectWallet() {
-        try {
-            console.log("Attempting to connect Coinbase Wallet...");
-            const wallet = await sdk.wallet.connect("coinbase");
-            console.log("Wallet connected:", wallet);
-            connectedAccount = wallet;
+async function connectWallet() {
+    try {
+        // Check if MetaMask or another wallet is installed
+        if (typeof window.ethereum !== "undefined") {
+            console.log("Attempting to connect wallet...");
+            web3 = new Web3(window.ethereum);
+
+            // Request account access
+            accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+            connectedAccount = accounts[0];
+            console.log("Wallet connected:", connectedAccount);
+
+            // Switch to Base mainnet
+            await window.ethereum.request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: "0x2105" }], // Base mainnet Chain ID: 8453 (hex: 0x2105)
+            });
+
+            // Update UI
             walletAddress = `Connected: ${connectedAccount.slice(0, 6)}...`;
             document.getElementById("wallet-address").innerText = walletAddress;
 
-            console.log("Fetching pending rewards for:", connectedAccount);
-            const rewards = await contract.call("pendingRewards", [connectedAccount]);
-            pendingRewards = ethers.utils.formatEther(rewards);
-            document.getElementById("pending-rewards").innerText = pendingRewards;
-        } catch (error) {
-            console.error("Wallet connection failed:", error);
-            alert("Failed to connect wallet: " + error.message);
-        }
-    }
+            // Initialize contract
+            contract = new web3.eth.Contract(contractABI, contractAddress);
 
+            // Fetch pending rewards
+            console.log("Fetching pending rewards for:", connectedAccount);
+            const rewards = await contract.methods.pendingRewards(connectedAccount).call();
+            pendingRewards = web3.utils.fromWei(rewards, "ether");
+            document.getElementById("pending-rewards").innerText = pendingRewards;
+        } else {
+            alert("Please install MetaMask or another Web3 wallet!");
+        }
+    } catch (error) {
+        console.error("Wallet connection failed:", error);
+        alert("Failed to connect wallet: " + error.message);
+    }
+}
+
+function setupWalletInteractions() {
     const connectWalletBtn = document.getElementById("connect-wallet");
     if (connectWalletBtn) {
         connectWalletBtn.addEventListener("click", connectWallet);
@@ -56,7 +322,7 @@ function setupWalletInteractions() {
             }
             try {
                 console.log("Claiming rewards...");
-                await contract.call("claimRewards");
+                await contract.methods.claimRewards().send({ from: connectedAccount });
                 console.log("Rewards claimed!");
                 alert("Rewards claimed!");
                 pendingRewards = 0;
@@ -71,7 +337,7 @@ function setupWalletInteractions() {
     }
 }
 
-// Rest of your game logic (unchanged)
+// Game logic (unchanged)
 let board;
 let boardWidth = 360;
 let boardHeight = 640;
@@ -131,6 +397,9 @@ window.onload = function() {
     requestAnimationFrame(update);
     setInterval(placePipes, 1500);
     document.addEventListener("keydown", moveBird);
+
+    // Set up wallet interactions after DOM is loaded
+    setupWalletInteractions();
 }
 
 function update() {
@@ -158,15 +427,18 @@ function update() {
             score += 0.5;
             pipe.passed = true;
             if (connectedAccount && pipe.img === topPipeImg && contract) {
-                contract.call("passPipe", [connectedAccount]).then(() => {
-                    console.log("passPipe called successfully");
-                    contract.call("pendingRewards", [connectedAccount]).then(rewards => {
-                        pendingRewards = ethers.utils.formatEther(rewards);
-                        document.getElementById("pending-rewards").innerText = pendingRewards;
+                contract.methods.passPipe(connectedAccount).send({ from: connectedAccount })
+                    .then(() => {
+                        console.log("passPipe called successfully");
+                        contract.methods.pendingRewards(connectedAccount).call()
+                            .then(rewards => {
+                                pendingRewards = web3.utils.fromWei(rewards, "ether");
+                                document.getElementById("pending-rewards").innerText = pendingRewards;
+                            });
+                    })
+                    .catch(error => {
+                        console.error("Error calling passPipe:", error);
                     });
-                }).catch(error => {
-                    console.error("Error calling passPipe:", error);
-                });
             }
         }
 
