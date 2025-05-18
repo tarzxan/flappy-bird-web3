@@ -2,7 +2,7 @@ let web3;
 let accounts;
 let contract;
 let isWalletConnected = false;
-let pipesPassed = 0; // Track pipes passed during gameplay
+let pipesPassed = 0;
 
 // Contract ABI
 const contractABI = [
@@ -386,10 +386,10 @@ let pipeY = 0;
 let topPipeImg;
 let bottomPipeImg;
 
-let velocityX = -2; // From reference JavaScript
+let velocityX = -2;
 let velocityY = 0;
-let gravity = 0.4; // From reference JavaScript
-let jumpVelocity = -6; // From reference JavaScript
+let gravity = 0.4;
+let jumpVelocity = -6;
 
 let gameOver = false;
 let score = 0;
@@ -401,7 +401,7 @@ let lastTime = 0;
 
 // Pipe spawning control
 let lastPipeSpawnTime = 0;
-const pipeSpawnInterval = 1500; // 1.5 seconds between pipe spawns
+const pipeSpawnInterval = 1500;
 
 async function startGame() {
     console.log("Starting game");
@@ -425,6 +425,16 @@ async function startGame() {
     pipesPassed = 0;
     lastTime = 0;
     lastPipeSpawnTime = 0;
+    gameOver = false; // Ensure game starts in a non-game-over state
+    score = 0;
+    bird.y = birdY; // Reset bird position
+    velocityY = 0; // Reset velocity
+
+    // Remove any existing keydown listeners to avoid duplicates
+    document.removeEventListener("keydown", moveBird);
+    // Add the keydown listener
+    document.addEventListener("keydown", moveBird);
+
     requestAnimationFrame(update);
 }
 
@@ -451,7 +461,6 @@ async function update(timestamp) {
             gameOver = true;
         }
 
-        // Spawn pipes within the game loop for better timing
         if (timestamp - lastPipeSpawnTime >= pipeSpawnInterval) {
             placePipes();
             lastPipeSpawnTime = timestamp;
@@ -533,15 +542,20 @@ function placePipes() {
 }
 
 function moveBird(e) {
+    console.log("Key pressed:", e.code); // Debug log to confirm key press
+
     if (!isWalletConnected) {
         alert("Please connect your wallet to play!");
         return;
     }
 
-    if (e.code == "Space" || e.code == "ArrowUp" || e.code == "KeyX") {
+    // Check for Space, ArrowUp, or KeyX
+    if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyX") {
+        console.log("Jump triggered, setting velocityY to", jumpVelocity);
         velocityY = jumpVelocity;
 
         if (gameOver) {
+            console.log("Game over, restarting game");
             bird.y = birdY;
             pipeArray = [];
             score = 0;
