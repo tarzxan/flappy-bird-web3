@@ -2,7 +2,7 @@ let web3;
 let accounts;
 let contract;
 let isWalletConnected = false;
-let pipesPassed = 0;
+let pipesPassed = 0; // Track pipes passed during gameplay
 
 // Contract ABI
 const contractABI = [
@@ -358,7 +358,7 @@ function setupWalletInteractions() {
     }
 }
 
-// Game logic with frame rate control
+// Game logic
 let board;
 let boardWidth = 360;
 let boardHeight = 640;
@@ -366,8 +366,8 @@ let context;
 
 let birdWidth = 34;
 let birdHeight = 24;
-let birdX = boardWidth/8;
-let birdY = boardHeight/2;
+let birdX = boardWidth / 8;
+let birdY = boardHeight / 2;
 let birdImg;
 
 let bird = {
@@ -386,11 +386,10 @@ let pipeY = 0;
 let topPipeImg;
 let bottomPipeImg;
 
-// Adjusted physics for slower gameplay
-let velocityX = -1.5; // Slower pipe movement (was -2)
+let velocityX = -2; // From reference JavaScript
 let velocityY = 0;
-let gravity = 0.3; // Reduced gravity for slower fall (was 0.4)
-let jumpVelocity = -5; // Slightly reduced jump height (was -6)
+let gravity = 0.4; // From reference JavaScript
+let jumpVelocity = -6; // From reference JavaScript
 
 let gameOver = false;
 let score = 0;
@@ -399,6 +398,10 @@ let score = 0;
 const targetFPS = 60;
 const frameTime = 1000 / targetFPS;
 let lastTime = 0;
+
+// Pipe spawning control
+let lastPipeSpawnTime = 0;
+const pipeSpawnInterval = 1500; // 1.5 seconds between pipe spawns
 
 async function startGame() {
     console.log("Starting game");
@@ -409,9 +412,9 @@ async function startGame() {
 
     birdImg = new Image();
     birdImg.src = "./flappybird.png";
-    birdImg.onload = function() {
+    birdImg.onload = function () {
         context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
-    }
+    };
 
     topPipeImg = new Image();
     topPipeImg.src = "./toppipe.png";
@@ -420,16 +423,15 @@ async function startGame() {
     bottomPipeImg.src = "./bottompipe.png";
 
     pipesPassed = 0;
+    lastTime = 0;
+    lastPipeSpawnTime = 0;
     requestAnimationFrame(update);
-    setInterval(placePipes, 1500);
-    document.addEventListener("keydown", moveBird);
 }
 
 async function update(timestamp) {
     if (!lastTime) lastTime = timestamp;
     const deltaTime = timestamp - lastTime;
 
-    // Only update if enough time has passed for the target FPS
     if (deltaTime >= frameTime) {
         console.log("Update loop running");
         lastTime = timestamp - (deltaTime % frameTime);
@@ -447,6 +449,12 @@ async function update(timestamp) {
 
         if (bird.y > board.height) {
             gameOver = true;
+        }
+
+        // Spawn pipes within the game loop for better timing
+        if (timestamp - lastPipeSpawnTime >= pipeSpawnInterval) {
+            placePipes();
+            lastPipeSpawnTime = timestamp;
         }
 
         for (let i = 0; i < pipeArray.length; i++) {
@@ -500,8 +508,8 @@ function placePipes() {
         return;
     }
 
-    let randomPipeY = pipeY - pipeHeight/4 - Math.random()*(pipeHeight/2);
-    let openingSpace = board.height/4;
+    let randomPipeY = pipeY - pipeHeight / 4 - Math.random() * (pipeHeight / 2);
+    let openingSpace = board.height / 4;
 
     let topPipe = {
         img: topPipeImg,
@@ -510,7 +518,7 @@ function placePipes() {
         width: pipeWidth,
         height: pipeHeight,
         passed: false
-    }
+    };
     pipeArray.push(topPipe);
 
     let bottomPipe = {
@@ -520,7 +528,7 @@ function placePipes() {
         width: pipeWidth,
         height: pipeHeight,
         passed: false
-    }
+    };
     pipeArray.push(bottomPipe);
 }
 
@@ -538,7 +546,8 @@ function moveBird(e) {
             pipeArray = [];
             score = 0;
             gameOver = false;
-            lastTime = 0; // Reset frame timing
+            lastTime = 0;
+            lastPipeSpawnTime = 0;
             startGame();
         }
     }
@@ -551,7 +560,7 @@ function detectCollision(a, b) {
            a.y + a.height > b.y;
 }
 
-window.onload = function() {
+window.onload = function () {
     console.log("Window loaded, setting up wallet interactions");
     setupWalletInteractions();
 };
