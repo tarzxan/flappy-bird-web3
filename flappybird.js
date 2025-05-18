@@ -2,8 +2,9 @@ let web3;
 let accounts;
 let contract;
 let isWalletConnected = false;
+let pipesPassed = 0; // Track pipes passed during gameplay
 
-// Your contract ABI (from your input)
+// Your contract ABI
 const contractABI = [
     {
         "inputs": [
@@ -293,7 +294,7 @@ async function connectWallet() {
         // Initialize contract
         contract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Fetch pending rewards
+        // Fetch initial pending rewards
         console.log("Fetching pending rewards for:", connectedAccount);
         const rewards = await contract.methods.pendingRewards(connectedAccount).call();
         pendingRewards = web3.utils.fromWei(rewards, "ether");
@@ -309,6 +310,27 @@ async function connectWallet() {
     } catch (error) {
         console.error("Wallet connection failed:", error);
         alert("Failed to connect wallet: " + error.message);
+    }
+}
+
+async function submitPipesPassed() {
+    if (!connectedAccount || pipesPassed === 0) return;
+
+    try {
+        console.log(`Submitting ${pipesPassed} pipes passed for player: ${connectedAccount}`);
+        // Call passPipe for each pipe passed in sequence
+        for (let i = 0; i < pipesPassed; i++) {
+            await contract.methods.passPipe(connectedAccount).send({ from: connectedAccount });
+            console.log(`passPipe ${i + 1}/${pipesPassed} submitted`);
+        }
+        // Fetch updated pending rewards after all passPipe calls
+        const rewards = await contract.methods.pendingRewards(connectedAccount).call();
+        pendingRewards = web3.utils.fromWei(rewards, "ether");
+        document.getElementById("pending-rewards").innerText = pendingRewards;
+        console.log("All pipes passed submitted, updated rewards:", pendingRewards);
+    } catch (error) {
+        console.error("Error submitting pipes passed:", error);
+        alert("Failed to submit pipes passed: " + error.message);
     }
 }
 
@@ -333,6 +355,7 @@ function setupWalletInteractions() {
                 console.log("Rewards claimed!");
                 alert("Rewards claimed!");
                 pendingRewards = 0;
+                pipesPassed = 0; // Reset pipes passed after claiming
                 document.getElementById("pending-rewards").innerText = pendingRewards;
             } catch (error) {
                 console.error("Error claiming rewards:", error);
@@ -379,7 +402,7 @@ let gravity = 0.4;
 let gameOver = false;
 let score = 0;
 
-function startGame() {
+async function startGame() {
     console.log("Starting game");
     board = document.getElementById("board");
     board.height = boardHeight;
@@ -398,15 +421,18 @@ function startGame() {
     bottomPipeImg = new Image();
     bottomPipeImg.src = "./bottompipe.png";
 
+    pipesPassed = 0; // Reset on game start
     requestAnimationFrame(update);
     setInterval(placePipes, 1500);
     document.addEventListener("keydown", moveBird);
 }
 
-function update() {
+async function update() {
     console.log("Update loop running");
     requestAnimationFrame(update);
     if (gameOver) {
+        // Submit all passPipe calls when game ends
+        await submitPipesPassed();
         return;
     }
     context.clearRect(0, 0, board.width, board.height);
@@ -427,18 +453,21 @@ function update() {
         if (!pipe.passed && bird.x > pipe.x + pipe.width) {
             score += 0.5;
             pipe.passed = true;
-            if (connectedAccount && pipe.img === topPipeImg && contract) {
-                contract.methods.passPipe(connectedAccount).send({ from: connectedAccount })
-                    .then(() => {
-                        console.log("passPipe called successfully");
-                        contract.methods.pendingRewards(connectedAccount).call()
-                            .then(rewards => {
-                                pendingRewards = web3.utils.fromWei(rewards, "ether");
-                                document.getElementById("pending-rewards").innerText = pendingRewards;
-                            });
+            if (pipe.img === topPipeImg) {
+                pipesPassed++; // Increment pipes passed
+                console.log(`Pipe passed, total: ${pipesPassed}`);
+                // Update pending rewards locally (estimation, assuming REWARD_PER_PIPE is fetched)
+                contract.methods.REWARD_PER_PIPE().call()
+                    .then(rewardPerPipe => {
+                        const reward = web3.utils.fromWei(rewardPerPipe, "ether");
+                        pendingRewards = Number(pendingRewards) + Number(reward);
+                        document.getElementById("pending-rewards").innerText = pendingRewards.toFixed(2);
                     })
                     .catch(error => {
-                        console.error("Error calling passPipe:", error);
+                        console.error("Error fetching REWARD_PER_PIPE:", error);
+                        // Fallback: Assume 1 token per pipe for UI
+                        pendingRewards += 1;
+                        document.getElementById("pending-rewards").innerText = pendingRewards.toFixed(2);
                     });
             }
         }
@@ -504,6 +533,7 @@ function moveBird(e) {
             pipeArray = [];
             score = 0;
             gameOver = false;
+            startGame(); // Restart the game
         }
     }
 }
