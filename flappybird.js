@@ -292,7 +292,7 @@ async function connectWallet() {
 
         console.log("Fetching pending rewards for:", connectedAccount);
         const rewards = await contract.methods.pendingRewards(connectedAccount).call();
-        pendingRewards = web3.utils.fromWei(rewards, "ether");
+        pendingRewards = Number(web3.utils.fromWei(rewards, "ether"));
         document.getElementById("pending-rewards").innerText = pendingRewards;
 
         isWalletConnected = true;
@@ -316,7 +316,7 @@ async function submitPipesPassed() {
             console.log(`passPipe ${i + 1}/${pipesPassed} submitted`);
         }
         const rewards = await contract.methods.pendingRewards(connectedAccount).call();
-        pendingRewards = web3.utils.fromWei(rewards, "ether");
+        pendingRewards = Number(web3.utils.fromWei(rewards, "ether"));
         document.getElementById("pending-rewards").innerText = pendingRewards;
         console.log("All pipes passed submitted, updated rewards:", pendingRewards);
     } catch (error) {
@@ -344,7 +344,7 @@ function setupWalletInteractions() {
                 console.log("Claiming rewards...");
                 await contract.methods.claimRewards().send({ from: connectedAccount });
                 console.log("Rewards claimed!");
-                alert("Rewards claimed!");
+                alert(`Rewards claimed! You received ${pendingRewards} TetraTokens.`);
                 pendingRewards = 0;
                 pipesPassed = 0;
                 document.getElementById("pending-rewards").innerText = pendingRewards;
@@ -425,14 +425,12 @@ async function startGame() {
     pipesPassed = 0;
     lastTime = 0;
     lastPipeSpawnTime = 0;
-    gameOver = false; // Ensure game starts in a non-game-over state
+    gameOver = false;
     score = 0;
-    bird.y = birdY; // Reset bird position
-    velocityY = 0; // Reset velocity
+    bird.y = birdY;
+    velocityY = 0;
 
-    // Remove any existing keydown listeners to avoid duplicates
     document.removeEventListener("keydown", moveBird);
-    // Add the keydown listener
     document.addEventListener("keydown", moveBird);
 
     requestAnimationFrame(update);
@@ -477,17 +475,9 @@ async function update(timestamp) {
                 if (pipe.img === topPipeImg) {
                     pipesPassed++;
                     console.log(`Pipe passed, total: ${pipesPassed}`);
-                    contract.methods.REWARD_PER_PIPE().call()
-                        .then(rewardPerPipe => {
-                            const reward = web3.utils.fromWei(rewardPerPipe, "ether");
-                            pendingRewards = Number(pendingRewards) + Number(reward);
-                            document.getElementById("pending-rewards").innerText = pendingRewards.toFixed(2);
-                        })
-                        .catch(error => {
-                            console.error("Error fetching REWARD_PER_PIPE:", error);
-                            pendingRewards += 1;
-                            document.getElementById("pending-rewards").innerText = pendingRewards.toFixed(2);
-                        });
+                    // Calculate pending rewards as pipesPassed * 10 TetraTokens
+                    pendingRewards = pipesPassed * 10;
+                    document.getElementById("pending-rewards").innerText = pendingRewards;
                 }
             }
 
@@ -542,14 +532,13 @@ function placePipes() {
 }
 
 function moveBird(e) {
-    console.log("Key pressed:", e.code); // Debug log to confirm key press
+    console.log("Key pressed:", e.code);
 
     if (!isWalletConnected) {
         alert("Please connect your wallet to play!");
         return;
     }
 
-    // Check for Space, ArrowUp, or KeyX
     if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyX") {
         console.log("Jump triggered, setting velocityY to", jumpVelocity);
         velocityY = jumpVelocity;
