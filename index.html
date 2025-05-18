@@ -7,14 +7,30 @@
         <link rel="stylesheet" href="flappybird.css">
         <script src="https://unpkg.com/web3@1.10.4/dist/web3.min.js"></script>
         <script src="flappybird.js" defer></script>
+        <style>
+            #game-container {
+                display: none; /* Hidden until wallet is connected */
+            }
+            #wallet-prompt {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                text-align: center;
+                font-family: Arial, sans-serif;
+            }
+        </style>
     </head>
     <body>
+        <div id="wallet-prompt">
+            <h2>Please connect your wallet to play</h2>
+            <button id="connect-wallet">Connect Wallet</button>
+        </div>
         <div id="game-container">
             <canvas id="board"></canvas>
             <div id="wallet-info">
                 <div>Wallet: <span id="wallet-address">Not connected</span></div>
                 <div>Pending Rewards: <span id="pending-rewards">0</span> TetraTokens</div>
-                <button id="connect-wallet">Connect Wallet</button>
                 <button id="claim-rewards">Claim Rewards</button>
             </div>
         </div>

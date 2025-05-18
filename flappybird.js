@@ -1,6 +1,7 @@
 let web3;
 let accounts;
 let contract;
+let isWalletConnected = false;
 
 // Your contract ABI (from your input)
 const contractABI = [
@@ -297,6 +298,14 @@ async function connectWallet() {
         const rewards = await contract.methods.pendingRewards(connectedAccount).call();
         pendingRewards = web3.utils.fromWei(rewards, "ether");
         document.getElementById("pending-rewards").innerText = pendingRewards;
+
+        // Show the game
+        isWalletConnected = true;
+        document.getElementById("wallet-prompt").style.display = "none";
+        document.getElementById("game-container").style.display = "block";
+
+        // Start the game
+        startGame();
     } catch (error) {
         console.error("Wallet connection failed:", error);
         alert("Failed to connect wallet: " + error.message);
@@ -335,7 +344,7 @@ function setupWalletInteractions() {
     }
 }
 
-// Game logic (unchanged)
+// Game logic
 let board;
 let boardWidth = 360;
 let boardHeight = 640;
@@ -370,8 +379,8 @@ let gravity = 0.4;
 let gameOver = false;
 let score = 0;
 
-window.onload = function() {
-    console.log("Window loaded, initializing game");
+function startGame() {
+    console.log("Starting game");
     board = document.getElementById("board");
     board.height = boardHeight;
     board.width = boardWidth;
@@ -392,8 +401,6 @@ window.onload = function() {
     requestAnimationFrame(update);
     setInterval(placePipes, 1500);
     document.addEventListener("keydown", moveBird);
-
-    setupWalletInteractions();
 }
 
 function update() {
@@ -484,6 +491,11 @@ function placePipes() {
 }
 
 function moveBird(e) {
+    if (!isWalletConnected) {
+        alert("Please connect your wallet to play!");
+        return;
+    }
+
     if (e.code == "Space" || e.code == "ArrowUp" || e.code == "KeyX") {
         velocityY = -6;
 
@@ -502,3 +514,8 @@ function detectCollision(a, b) {
            a.y < b.y + b.height &&
            a.y + a.height > b.y;
 }
+
+window.onload = function() {
+    console.log("Window loaded, setting up wallet interactions");
+    setupWalletInteractions();
+};
