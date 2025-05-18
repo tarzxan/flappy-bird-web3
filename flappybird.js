@@ -2,7 +2,7 @@ let web3;
 let accounts;
 let contract;
 
-// Your contract ABI (you’ll need to provide this)
+// Your contract ABI (simplified based on your functions)
 const contractABI = [
     [
 	{
@@ -268,37 +268,37 @@ let connectedAccount = null;
 
 async function connectWallet() {
     try {
-        // Check if MetaMask or another wallet is installed
-        if (typeof window.ethereum !== "undefined") {
-            console.log("Attempting to connect wallet...");
-            web3 = new Web3(window.ethereum);
-
-            // Request account access
-            accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-            connectedAccount = accounts[0];
-            console.log("Wallet connected:", connectedAccount);
-
-            // Switch to Base mainnet
-            await window.ethereum.request({
-                method: "wallet_switchEthereumChain",
-                params: [{ chainId: "0x2105" }], // Base mainnet Chain ID: 8453 (hex: 0x2105)
-            });
-
-            // Update UI
-            walletAddress = `Connected: ${connectedAccount.slice(0, 6)}...`;
-            document.getElementById("wallet-address").innerText = walletAddress;
-
-            // Initialize contract
-            contract = new web3.eth.Contract(contractABI, contractAddress);
-
-            // Fetch pending rewards
-            console.log("Fetching pending rewards for:", connectedAccount);
-            const rewards = await contract.methods.pendingRewards(connectedAccount).call();
-            pendingRewards = web3.utils.fromWei(rewards, "ether");
-            document.getElementById("pending-rewards").innerText = pendingRewards;
-        } else {
+        if (typeof window.ethereum === "undefined") {
             alert("Please install MetaMask or another Web3 wallet!");
+            return;
         }
+
+        console.log("Attempting to connect wallet...");
+        web3 = new Web3(window.ethereum);
+
+        // Request account access
+        accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        connectedAccount = accounts[0];
+        console.log("Wallet connected:", connectedAccount);
+
+        // Switch to Base mainnet (Chain ID: 8453, hex: 0x2105)
+        await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x2105" }],
+        });
+
+        // Update UI
+        walletAddress = `Connected: ${connectedAccount.slice(0, 6)}...`;
+        document.getElementById("wallet-address").innerText = walletAddress;
+
+        // Initialize contract
+        contract = new web3.eth.Contract(contractABI, contractAddress);
+
+        // Fetch pending rewards
+        console.log("Fetching pending rewards for:", connectedAccount);
+        const rewards = await contract.methods.pendingRewards(connectedAccount).call();
+        pendingRewards = web3.utils.fromWei(rewards, "ether");
+        document.getElementById("pending-rewards").innerText = pendingRewards;
     } catch (error) {
         console.error("Wallet connection failed:", error);
         alert("Failed to connect wallet: " + error.message);
@@ -343,7 +343,6 @@ let boardWidth = 360;
 let boardHeight = 640;
 let context;
 
-// Bird
 let birdWidth = 34;
 let birdHeight = 24;
 let birdX = boardWidth/8;
@@ -357,7 +356,6 @@ let bird = {
     height: birdHeight
 };
 
-// Pipes
 let pipeArray = [];
 let pipeWidth = 64;
 let pipeHeight = 512;
@@ -367,7 +365,6 @@ let pipeY = 0;
 let topPipeImg;
 let bottomPipeImg;
 
-// Physics
 let velocityX = -2;
 let velocityY = 0;
 let gravity = 0.4;
@@ -398,7 +395,6 @@ window.onload = function() {
     setInterval(placePipes, 1500);
     document.addEventListener("keydown", moveBird);
 
-    // Set up wallet interactions after DOM is loaded
     setupWalletInteractions();
 }
 
