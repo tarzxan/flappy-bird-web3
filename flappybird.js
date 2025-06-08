@@ -4,7 +4,7 @@ let contract;
 let isWalletConnected = false;
 let pipesPassed = 0;
 
-// Contract ABI
+// ABI for FlappyBirdGameV2
 const contractABI = [
     {
         "inputs": [
@@ -40,6 +40,26 @@ const contractABI = [
             }
         ],
         "name": "depositTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "pipeCount",
+                "type": "uint256"
+            }
+        ],
+        "name": "passPipe",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "renounceOwnership",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -97,19 +117,6 @@ const contractABI = [
         "type": "event"
     },
     {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "player",
-                "type": "address"
-            }
-        ],
-        "name": "passPipe",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
         "anonymous": false,
         "inputs": [
             {
@@ -127,13 +134,6 @@ const contractABI = [
         ],
         "name": "PipePassed",
         "type": "event"
-    },
-    {
-        "inputs": [],
-        "name": "renounceOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
     },
     {
         "anonymous": false,
@@ -157,6 +157,44 @@ const contractABI = [
     {
         "inputs": [
             {
+                "internalType": "uint256",
+                "name": "newCooldown",
+                "type": "uint256"
+            }
+        ],
+        "name": "setCooldownPeriod",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "player",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "reason",
+                "type": "string"
+            }
+        ],
+        "name": "TransferFailed",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
                 "name": "newOwner",
                 "type": "address"
@@ -169,7 +207,39 @@ const contractABI = [
     },
     {
         "inputs": [],
+        "name": "cooldownPeriod",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "getPiggyBankBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "lastPipePassTimestamp",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -259,8 +329,8 @@ const contractABI = [
     }
 ];
 
-// Contract address on Base mainnet
-const contractAddress = "0xcDCe80fEF5647D474efB39E9E43D209bd19c776f";
+// Contract address for the new FlappyBirdGameV2
+const contractAddress = "0x5A3ec610266129a51c70f4e79FFA4259493BcE0b";
 
 let walletAddress = "Not connected";
 let pendingRewards = 0;
@@ -306,22 +376,20 @@ async function connectWallet() {
     }
 }
 
-async function submitPipesPassed() {
+async function submitPipePasses() {
     if (!connectedAccount || pipesPassed === 0) return;
 
     try {
         console.log(`Submitting ${pipesPassed} pipes passed for player: ${connectedAccount}`);
-        for (let i = 0; i < pipesPassed; i++) {
-            await contract.methods.passPipe(connectedAccount).send({ from: connectedAccount });
-            console.log(`passPipe ${i + 1}/${pipesPassed} submitted`);
-        }
+        await contract.methods.passPipe(pipesPassed).send({ from: connectedAccount });
+        console.log("Pipe passes submitted successfully");
+
         const rewards = await contract.methods.pendingRewards(connectedAccount).call();
         pendingRewards = Number(web3.utils.fromWei(rewards, "ether"));
         document.getElementById("pending-rewards").innerText = pendingRewards;
-        console.log("All pipes passed submitted, updated rewards:", pendingRewards);
     } catch (error) {
-        console.error("Error submitting pipes passed:", error);
-        alert("Failed to submit pipes passed: " + error.message);
+        console.error("Error submitting pipe passes:", error);
+        alert("Failed to submit pipe passes: " + error.message);
     }
 }
 
@@ -369,6 +437,7 @@ let birdHeight = 24;
 let birdX = boardWidth / 8;
 let birdY = boardHeight / 2;
 let birdImg;
+let backgroundImg; // Assuming you have a background from your recovered files
 
 let bird = {
     x: birdX,
@@ -410,6 +479,13 @@ async function startGame() {
     board.width = boardWidth;
     context = board.getContext("2d");
 
+    // Load background image (use your recovered background if available)
+    backgroundImg = new Image();
+    backgroundImg.src = "./background.png"; // Adjust path if different
+    backgroundImg.onload = function () {
+        drawBackground();
+    };
+
     birdImg = new Image();
     birdImg.src = "./flappybird.png";
     birdImg.onload = function () {
@@ -430,6 +506,9 @@ async function startGame() {
     bird.y = birdY;
     velocityY = 0;
 
+    // Add touch event listener for mobile
+    board.addEventListener("touchstart", moveBirdTouch, { passive: false });
+
     document.removeEventListener("keydown", moveBird);
     document.addEventListener("keydown", moveBird);
 
@@ -445,11 +524,14 @@ async function update(timestamp) {
         lastTime = timestamp - (deltaTime % frameTime);
 
         if (gameOver) {
-            await submitPipesPassed();
+            await submitPipePasses();
             return;
         }
 
         context.clearRect(0, 0, board.width, board.height);
+        if (backgroundImg) {
+            context.drawImage(backgroundImg, 0, 0, board.width, board.height); // Draw background
+        }
 
         velocityY += gravity;
         bird.y = Math.max(bird.y + velocityY, 0);
@@ -475,7 +557,6 @@ async function update(timestamp) {
                 if (pipe.img === topPipeImg) {
                     pipesPassed++;
                     console.log(`Pipe passed, total: ${pipesPassed}`);
-                    // Calculate pending rewards as pipesPassed * 10 TetraTokens
                     pendingRewards = pipesPassed * 10;
                     document.getElementById("pending-rewards").innerText = pendingRewards;
                 }
@@ -500,6 +581,15 @@ async function update(timestamp) {
     }
 
     requestAnimationFrame(update);
+}
+
+function drawBackground() {
+    if (backgroundImg) {
+        context.drawImage(backgroundImg, 0, 0, board.width, board.height);
+    } else {
+        context.fillStyle = "#87CEEB"; // Sky blue fallback
+        context.fillRect(0, 0, board.width, board.height);
+    }
 }
 
 function placePipes() {
@@ -531,6 +621,7 @@ function placePipes() {
     pipeArray.push(bottomPipe);
 }
 
+// Move bird with keyboard
 function moveBird(e) {
     console.log("Key pressed:", e.code);
 
@@ -553,6 +644,31 @@ function moveBird(e) {
             lastPipeSpawnTime = 0;
             startGame();
         }
+    }
+}
+
+// Move bird with touch on mobile
+function moveBirdTouch(e) {
+    e.preventDefault(); // Prevent scrolling on touch
+    console.log("Touch detected");
+
+    if (!isWalletConnected) {
+        alert("Please connect your wallet to play!");
+        return;
+    }
+
+    console.log("Jump triggered, setting velocityY to", jumpVelocity);
+    velocityY = jumpVelocity;
+
+    if (gameOver) {
+        console.log("Game over, restarting game");
+        bird.y = birdY;
+        pipeArray = [];
+        score = 0;
+        gameOver = false;
+        lastTime = 0;
+        lastPipeSpawnTime = 0;
+        startGame();
     }
 }
 
