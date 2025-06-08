@@ -339,7 +339,7 @@ let connectedAccount = null;
 async function connectWallet() {
     try {
         if (typeof window.ethereum === "undefined") {
-            alert("Please install MetaMask or another Web3 wallet!");
+            alert("Please install or enable the MetaMask extension!");
             return;
         }
 
@@ -437,7 +437,7 @@ let birdHeight = 24;
 let birdX = boardWidth / 8;
 let birdY = boardHeight / 2;
 let birdImg;
-let backgroundImg; // Assuming you have a background from your recovered files
+let backgroundImg;
 
 let bird = {
     x: birdX,
@@ -479,17 +479,21 @@ async function startGame() {
     board.width = boardWidth;
     context = board.getContext("2d");
 
-    // Load background image (use your recovered background if available)
+    // Load background image with error handling
     backgroundImg = new Image();
-    backgroundImg.src = "./background.png"; // Adjust path if different
-    backgroundImg.onload = function () {
-        drawBackground();
+    backgroundImg.src = "./background.png";
+    backgroundImg.onerror = function() {
+        console.error("Background image failed to load, using fallback");
     };
 
+    // Load bird image with error handling
     birdImg = new Image();
     birdImg.src = "./flappybird.png";
-    birdImg.onload = function () {
+    birdImg.onload = function() {
         context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+    };
+    birdImg.onerror = function() {
+        console.error("Bird image failed to load, game may not render properly");
     };
 
     topPipeImg = new Image();
@@ -529,13 +533,24 @@ async function update(timestamp) {
         }
 
         context.clearRect(0, 0, board.width, board.height);
-        if (backgroundImg) {
-            context.drawImage(backgroundImg, 0, 0, board.width, board.height); // Draw background
+
+        // Draw background only if image is loaded
+        if (backgroundImg && backgroundImg.complete && backgroundImg.naturalHeight !== 0) {
+            context.drawImage(backgroundImg, 0, 0, board.width, board.height);
+        } else {
+            context.fillStyle = "#87CEEB"; // Sky blue fallback
+            context.fillRect(0, 0, board.width, board.height);
+            console.log("Using fallback background due to image load failure");
         }
 
-        velocityY += gravity;
-        bird.y = Math.max(bird.y + velocityY, 0);
-        context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+        // Draw bird only if image is loaded
+        if (birdImg && birdImg.complete && birdImg.naturalHeight !== 0) {
+            velocityY += gravity;
+            bird.y = Math.max(bird.y + velocityY, 0);
+            context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+        } else {
+            console.log("Bird not rendered due to image load failure");
+        }
 
         if (bird.y > board.height) {
             gameOver = true;
@@ -549,7 +564,9 @@ async function update(timestamp) {
         for (let i = 0; i < pipeArray.length; i++) {
             let pipe = pipeArray[i];
             pipe.x += velocityX;
-            context.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height);
+            if (topPipeImg && topPipeImg.complete && topPipeImg.naturalHeight !== 0) {
+                context.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height);
+            }
 
             if (!pipe.passed && bird.x > pipe.x + pipe.width) {
                 score += 0.5;
@@ -584,7 +601,7 @@ async function update(timestamp) {
 }
 
 function drawBackground() {
-    if (backgroundImg) {
+    if (backgroundImg && backgroundImg.complete && backgroundImg.naturalHeight !== 0) {
         context.drawImage(backgroundImg, 0, 0, board.width, board.height);
     } else {
         context.fillStyle = "#87CEEB"; // Sky blue fallback
