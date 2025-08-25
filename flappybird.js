@@ -432,8 +432,8 @@ let boardWidth = 360;
 let boardHeight = 640;
 let context;
 
-let birdWidth = 38;
-let birdHeight = 28;
+let birdWidth = 35;
+let birdHeight = 25;
 let birdX = boardWidth / 8;
 let birdY = boardHeight / 2;
 let birdImg;
