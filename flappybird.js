@@ -432,8 +432,8 @@ let boardWidth = 360;
 let boardHeight = 640;
 let context;
 
-let birdWidth = 34;
-let birdHeight = 24;
+let birdWidth = 38;
+let birdHeight = 28;
 let birdX = boardWidth / 8;
 let birdY = boardHeight / 2;
 let birdImg;
@@ -447,7 +447,7 @@ let bird = {
 };
 
 let pipeArray = [];
-let pipeWidth = 64;
+let pipeWidth = 58;
 let pipeHeight = 508;
 let pipeX = boardWidth;
 let pipeY = 0;
