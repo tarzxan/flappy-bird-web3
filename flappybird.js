@@ -448,7 +448,7 @@ let bird = {
 
 let pipeArray = [];
 let pipeWidth = 64;
-let pipeHeight = 512;
+let pipeHeight = 508;
 let pipeX = boardWidth;
 let pipeY = 0;
 
