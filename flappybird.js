@@ -339,7 +339,7 @@ let connectedAccount = null;
 async function connectWallet() {
     try {
         if (typeof window.ethereum === "undefined") {
-            alert("Please install or enable the MetaMask extension!");
+            alert("Please install or enable web 3 wallet extension!");
             return;
         }
 
@@ -412,7 +412,7 @@ function setupWalletInteractions() {
                 console.log("Claiming rewards...");
                 await contract.methods.claimRewards().send({ from: connectedAccount });
                 console.log("Rewards claimed!");
-                alert(`Rewards claimed! You received ${pendingRewards} TetraTokens.`);
+                alert(`Rewards claimed! You received ${pendingRewards} BirdDogTokens.`);
                 pendingRewards = 0;
                 pipesPassed = 0;
                 document.getElementById("pending-rewards").innerText = pendingRewards;
@@ -488,7 +488,7 @@ async function startGame() {
 
     // Load bird image with error handling
     birdImg = new Image();
-    birdImg.src = "./flappybird.png";
+    birdImg.src = "./flappybirdm.png";
     birdImg.onload = function() {
         context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
     };
